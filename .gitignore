@@ -1,0 +1,48 @@
+# Compiled binaries
+
+*.exe
+*.out
+*.o
+*.a
+*.so
+
+# Build artifacts
+
+build/
+bin/
+
+# Generated results (DO NOT TRACK)
+
+results/clusters.csv
+results/plot.png
+
+# Temporary / logs
+
+*.log
+*.tmp
+
+# Python cache
+
+**pycache**/
+*.pyc
+*.pyo
+
+# IDE / Editor files
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+
+.DS_Store
+Thumbs.db
+
+# Environment files
+
+.env
+
+# Ignore large datasets (uncomment if needed)
+
+# data/*.csv
