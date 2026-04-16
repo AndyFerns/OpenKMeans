@@ -25,7 +25,7 @@ def banner():
     """Print a nice banner."""
     print()
     print("╔══════════════════════════════════════════╗")
-    print("║     OpenKMeans — Terminal Interface       ║")
+    print("║     OpenKMeans — Terminal Interface      ║")
     print("╚══════════════════════════════════════════╝")
     print()
 
@@ -38,7 +38,7 @@ def get_int(prompt, default):
     try:
         return int(raw)
     except ValueError:
-        print(f"  ⚠  Invalid input, using default ({default})")
+        print(f"[ERROR] Invalid input, using default ({default})")
         return default
 
 
@@ -49,14 +49,14 @@ def get_choice(prompt, options, default):
         return raw
     if raw == "":
         return default
-    print(f"  ⚠  Invalid choice, using default ({default})")
+    print(f"[ERROR]Invalid choice, using default ({default})")
     return default
 
 
 def run_kmeans(k, threads, mode, normalize):
     """Invoke the C executable and stream its output."""
     if not os.path.isfile(EXECUTABLE):
-        print(f"\n  ❌ Executable not found: {EXECUTABLE}")
+        print(f"\n[ERROR] Executable not found: {EXECUTABLE}")
         print("     Run 'make build' first.\n")
         return
 
@@ -70,23 +70,27 @@ def run_kmeans(k, threads, mode, normalize):
     if normalize:
         cmd.append("--normalize")
 
-    print("\n  ▶ Running:", " ".join(cmd))
+    print("\n[Running]:", " ".join(cmd))
     print("  " + "─" * 44)
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True,
-                                cwd=PROJECT_ROOT)
+        result = subprocess.run(
+            cmd, capture_output=True, 
+            text=True,
+            cwd=PROJECT_ROOT,
+            encoding="utf-8"
+        )
         print(result.stdout)
         if result.stderr:
-            print("  ⚠ STDERR:", result.stderr)
+            print("[STDERR] :", result.stderr)
     except Exception as e:
-        print(f"  ❌ Error running executable: {e}")
+        print(f"[ERROR]Error running executable: {e}")
 
 
 def show_results():
     """Display the first few lines of the results CSV."""
     if not os.path.isfile(RESULTS_CSV):
-        print("  ⚠  No results file found.")
+        print("[ERROR] No results file found.")
         return
 
     print("\n  ── Cluster Results (first 15 rows) ──────")
@@ -103,15 +107,15 @@ def run_visualization():
     """Call the visualization script."""
     plot_script = os.path.join(SCRIPT_DIR, "..", "visualization", "plot.py")
     if not os.path.isfile(plot_script):
-        print("  ⚠  plot.py not found.")
+        print("  [error]  plot.py not found.")
         return
 
     print("  ▶ Generating plot...")
     try:
         subprocess.run([sys.executable, plot_script], cwd=PROJECT_ROOT)
-        print("  ✓ Plot saved to results/plot.png\n")
+        print(" Plot saved to results/plot.png\n")
     except Exception as e:
-        print(f"  ❌ Error: {e}")
+        print(f"  [ERROR]: {e}")
 
 
 def main():
@@ -143,11 +147,11 @@ def main():
             run_visualization()
 
         elif choice == "4":
-            print("\n  Goodbye! 👋\n")
+            print("\n  Goodbye!\n")
             break
 
         else:
-            print("  ⚠  Invalid option.\n")
+            print("  [ERROR]  Invalid option.\n")
 
 
 if __name__ == "__main__":
