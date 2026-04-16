@@ -17,8 +17,8 @@ import csv
 # ── Paths ──────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
-RESULTS_CSV  = os.path.join(PROJECT_ROOT, "results", "clusters.csv")
-PLOT_OUTPUT  = os.path.join(PROJECT_ROOT, "results", "plot.png")
+# RESULTS_CSV  = os.path.join(PROJECT_ROOT, "results", "clusters.csv")
+# PLOT_OUTPUT  = os.path.join(PROJECT_ROOT, "results", "plot.png")
 
 
 def load_results(filepath):
@@ -40,7 +40,17 @@ def load_results(filepath):
     return ages, bps, glucoses, bmis, clusters
 
 
-def plot_matplotlib(ages, bps, glucoses, bmis, clusters):
+def generate_paths(input_file, k=3, mode="omp"):
+    base = os.path.basename(input_file)
+    name = os.path.splitext(base)[0]
+
+    results_csv = os.path.join(PROJECT_ROOT, "results", f"{name}_k{k}_{mode}.csv")
+    plot_output = os.path.join(PROJECT_ROOT, "results", f"{name}_k{k}_{mode}_plot.png")
+
+    return results_csv, plot_output
+
+
+def plot_matplotlib(ages, bps, glucoses, bmis, clusters, output_path):
     """
     Create a 2×2 subplot figure showing different feature pairs,
     coloured by cluster. Saves to results/plot.png.
@@ -81,9 +91,9 @@ def plot_matplotlib(ages, bps, glucoses, bmis, clusters):
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    plt.savefig(PLOT_OUTPUT, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
     plt.close()
-    print(f"[plot] Saved matplotlib plot to {PLOT_OUTPUT}")
+    print(f"[plot] Saved matplotlib plot to {output_path}")
 
 
 def plot_terminal(ages, bps, clusters):
@@ -115,9 +125,18 @@ def plot_terminal(ages, bps, clusters):
 
 
 def main():
+    if len(sys.argv) < 4:
+        print("Usage: plot.py <input_file> <k> <mode>")
+        sys.exit(1)
+
+    input_file = sys.argv[1]
+    k = int(sys.argv[2])
+    mode = sys.argv[3]
+
+    RESULTS_CSV, PLOT_OUTPUT = generate_paths(input_file, k, mode)
+
     if not os.path.isfile(RESULTS_CSV):
         print(f"[plot] Results file not found: {RESULTS_CSV}")
-        print("       Run the clustering first.")
         sys.exit(1)
 
     print(f"[plot] Loading results from {RESULTS_CSV}")
@@ -125,7 +144,7 @@ def main():
     print(f"[plot] Loaded {len(ages)} data points, {max(clusters) + 1} clusters")
 
     # Matplotlib plot (saved to file)
-    plot_matplotlib(ages, bps, glucoses, bmis, clusters)
+    plot_matplotlib(ages, bps, glucoses, bmis, clusters, PLOT_OUTPUT)
 
     # Terminal plot (if plotext is available)
     plot_terminal(ages, bps, clusters)
