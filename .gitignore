@@ -45,4 +45,6 @@ Thumbs.db
 
 # Ignore large datasets (uncomment if needed)
 
-# data/*.csv
+data/*.csv
+results/*.csv
+results/*.png
