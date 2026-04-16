@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import subprocess
 import threading
+import re
 import os
 import sys
 from PIL import Image, ImageTk
@@ -250,6 +251,64 @@ class OpenKMeansGUI:
 
         self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
         self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
+        
+        
+    def _display_metrics(self):
+        """Display performance metrics in a clean formatted block"""
+
+        text = self.output.get("1.0", tk.END)
+
+        seq_match = re.search(r"Sequential Time\s*:\s*([\d.]+)", text)
+        par_match = re.search(r"Parallel Time\s*:\s*([\d.]+)", text)
+        speed_match = re.search(r"Speedup\s*:\s*([\d.]+)", text)
+
+        if not seq_match or not par_match:
+            self._append("⚠ Run K-Means first to generate metrics\n")
+            return
+
+        seq_time = float(seq_match.group(1))
+        par_time = float(par_match.group(1))
+        speedup = float(speed_match.group(1)) if speed_match else (seq_time / par_time if par_time > 0 else 0)
+
+        efficiency = speedup / int(self.threads_var.get())
+
+        report = f"""
+        ══════════════════════════════════════════════
+                📊 PERFORMANCE ANALYSIS REPORT
+        ══════════════════════════════════════════════
+
+        🧠 Execution Summary:
+        • Sequential Time : {seq_time:.6f} s
+        • Parallel Time   : {par_time:.6f} s
+        • Speedup         : {speedup:.2f}x
+        • Efficiency      : {efficiency:.2f}
+
+        ⚙️ Configuration:
+        • Threads         : {self.threads_var.get()}
+        • Clusters (k)    : {self.k_var.get()}
+        • Mode            : {self.mode_var.get()}
+
+        📈 Interpretation:
+        """
+
+        if speedup > 1:
+            report += "  ✅ Parallelization is effective (speedup achieved)\n"
+        elif speedup == 1:
+            report += "  ⚖️ No gain from parallelization\n"
+        else:
+            report += "  ❌ Overhead dominates (dataset too small)\n"
+
+        report += """
+        💡 Recommendation:
+        • Use larger datasets for better parallel performance
+        • Tune thread count vs data size
+        • Avoid excessive threads for small workloads
+
+        ══════════════════════════════════════════════
+        """
+
+        self._append(report)
+
 
     def _on_clear(self):
         """Clear the output area."""
@@ -259,9 +318,6 @@ class OpenKMeansGUI:
         self.output.delete("1.0", tk.END)
         self.status.config(text="Ready")
         
-    def _display_metrics(self):
-        """Display performance metrics for the given dataset + clusters and a final overview"""
-        pass
 
     def _append(self, text):
         """Append text to the output area and auto-scroll."""
