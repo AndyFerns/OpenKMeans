@@ -40,6 +40,20 @@ static void print_usage(const char *prog) {
     printf("  --help             Show this message\n");
 }
 
+void generate_output_filename(const char *input, char *output, int k, const char *mode) {
+    const char *base = strrchr(input, '/');
+    if (!base) base = strrchr(input, '\\');  // Windows support
+    base = base ? base + 1 : input;
+
+    char name[256];
+    strcpy(name, base);
+
+    char *dot = strrchr(name, '.');
+    if (dot) *dot = '\0';  // remove extension
+
+    sprintf(output, "results/%s_k%d_%s.csv", name, k, mode);
+}
+
 /* ── Main ───────────────────────────────────────────────────────── */
 
 int main(int argc, char *argv[]) {
@@ -50,6 +64,8 @@ int main(int argc, char *argv[]) {
     char *mode       = "both";
     int   threads    = 4;
     int   normalize  = 0;
+
+    char output_file[256];
 
     /* ── Parse command-line arguments ──────────────────────────── */
     for (int i = 1; i < argc; i++) {
@@ -118,8 +134,11 @@ int main(int argc, char *argv[]) {
         print_centroids(centroids, k);
 
         /* Save sequential results */
-        if (strcmp(mode, "seq") == 0)
-            save_results("results/clusters.csv", data, n);
+        if (strcmp(mode, "seq") == 0) {
+            generate_output_filename(input_file, output_file, k, "seq");
+            save_results(output_file, data, n);
+            printf("[io] Saved sequential results to '%s'\n", output_file);
+        }
     }
 
     /* ── Run Parallel (OpenMP) ──────────────────────────────────── */
@@ -143,7 +162,9 @@ int main(int argc, char *argv[]) {
         print_centroids(centroids, k);
 
         /* Save parallel results (overwrite if "both") */
-        save_results("results/clusters.csv", data, n);
+        generate_output_filename(input_file, output_file, k, "omp");
+        save_results(output_file, data, n);
+        printf("[io] Saved parallel results to '%s'\n", output_file);
     }
 
     /* ── Speedup Report ─────────────────────────────────────────── */
@@ -161,6 +182,6 @@ int main(int argc, char *argv[]) {
     free(centroids);
     free(data);
 
-    printf("[main] Done. Results saved to results/clusters.csv\n");
+    printf("[main] Done. Results saved!\n");
     return 0;
 }
