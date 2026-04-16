@@ -15,6 +15,7 @@ import subprocess
 import threading
 import os
 import sys
+from PIL import Image, ImageTk
 
 # ── Paths ──────────────────────────────────────────────────────────
 SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -94,6 +95,14 @@ class OpenKMeansGUI:
         self.plot_btn = ttk.Button(btn_frame, text="📊 Generate Plot",
                                    command=self._on_plot)
         self.plot_btn.pack(side="left", padx=5)
+        
+        self.view_plot_btn = ttk.Button(btn_frame, text="🗺️ View Plot",
+                                    command=self._display_plot_image)
+        self.view_plot_btn.pack(side="left", padx=5)
+        
+        self.metrics_btn = ttk.Button(btn_frame, text="📝 Metrics",
+                                    command=self._display_metrics)
+        self.metrics_btn.pack(side="left", padx=5)
 
         self.clear_btn = ttk.Button(btn_frame, text="🗑  Clear Output",
                                     command=self._on_clear)
@@ -110,6 +119,24 @@ class OpenKMeansGUI:
         self.status = tk.Label(self.root, text="Ready", anchor="w",
                                relief="sunken", font=("Helvetica", 9))
         self.status.pack(fill="x", side="bottom")
+        
+        # --- Image display frame ---
+        self.plot_frame = tk.Frame(self.root)
+        self.plot_frame.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.canvas = tk.Canvas(self.plot_frame, bg="black")
+        self.scroll_y = tk.Scrollbar(self.plot_frame, orient="vertical", command=self.canvas.yview)
+        self.scroll_x = tk.Scrollbar(self.plot_frame, orient="horizontal", command=self.canvas.xview)
+
+        self.canvas.configure(yscrollcommand=self.scroll_y.set,
+                            xscrollcommand=self.scroll_x.set)
+
+        self.scroll_y.pack(side="right", fill="y")
+        self.scroll_x.pack(side="bottom", fill="x")
+        self.canvas.pack(fill="both", expand=True)
+        
+        # Bind mousewheel to zoom
+        self.canvas.bind("<MouseWheel>", self._zoom)
 
     # ── Actions ─────────────────────────────────────────────────
 
@@ -144,8 +171,13 @@ class OpenKMeansGUI:
     def _run_process(self, cmd):
         """Execute the command and display output."""
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True,
-                                    cwd=PROJECT_ROOT)
+            result = subprocess.run(
+                cmd, 
+                capture_output=True,
+                text=True,
+                cwd=PROJECT_ROOT,
+                encoding="utf-8"
+            )
             self.root.after(0, self._append, result.stdout)
             if result.stderr:
                 self.root.after(0, self._append,
@@ -167,9 +199,13 @@ class OpenKMeansGUI:
         self._append("▶ Generating cluster plot...\n")
 
         try:
-            result = subprocess.run([sys.executable, PLOT_SCRIPT],
-                                    capture_output=True, text=True,
-                                    cwd=PROJECT_ROOT)
+            result = subprocess.run(
+                [sys.executable, PLOT_SCRIPT],
+                capture_output=True, 
+                text=True,
+                cwd=PROJECT_ROOT, 
+                encoding="utf-8"
+            )
             self._append(result.stdout)
             if result.stderr:
                 self._append(f"⚠ {result.stderr}")
@@ -178,14 +214,54 @@ class OpenKMeansGUI:
             # Show the plot if it exists
             if os.path.isfile(PLOT_IMAGE):
                 self._append("✓ Plot saved to results/plot.png\n")
+                # self._display_plot_image()
+
         except Exception as e:
             self._append(f"❌ Error: {e}\n")
             self.status.config(text="Error")
 
+    def _zoom(self, event):
+        """Standard mousewheel binded zoom"""
+        scale = 1.1 if event.delta > 0 else 0.9
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        self.canvas.scale("all", x, y, scale, scale)
+        
+    def _display_plot_image(self):
+        if not os.path.isfile(PLOT_IMAGE):
+            self._append("⚠ Plot image not found\n")
+            return
+        
+            # Hide text
+        self.output.pack_forget()
+
+        # Show plot area
+        self.plot_frame.pack(fill="both", expand=True)
+
+        # Clear previous image
+        self.canvas.delete("all")
+
+        img = Image.open(PLOT_IMAGE)
+
+        # Optional: resize if too big
+        img = img.resize((800, 600))
+
+        self.tk_img = ImageTk.PhotoImage(img)
+
+        self.canvas.create_image(0, 0, anchor="nw", image=self.tk_img)
+        self.canvas.config(scrollregion=self.canvas.bbox(tk.ALL))
+
     def _on_clear(self):
         """Clear the output area."""
+        self.plot_frame.pack_forget()   # hide plot
+        self.output.pack(fill="both", expand=True, padx=15, pady=10)
+    
         self.output.delete("1.0", tk.END)
         self.status.config(text="Ready")
+        
+    def _display_metrics(self):
+        """Display performance metrics for the given dataset + clusters and a final overview"""
+        pass
 
     def _append(self, text):
         """Append text to the output area and auto-scroll."""
