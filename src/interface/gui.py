@@ -420,7 +420,7 @@ class OpenKMeansGUI:
         w = max(1, int(self._original_image.width  * self._zoom_level))
         h = max(1, int(self._original_image.height * self._zoom_level))
 
-        resized = self._original_image.resize((w, h), Image.LANCZOS)
+        resized = self._original_image.resize((w, h), Image.Resampling.LANCZOS)
         self._tk_img = ImageTk.PhotoImage(resized)   # keep reference!
 
         self.canvas.delete("all")
