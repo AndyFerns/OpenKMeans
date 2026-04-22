@@ -42,8 +42,7 @@ run: build
 # ── Clean ────────────────────────────────────────────────────────
 
 clean:
-	rm -f $(TARGET)
-	rm -f results/clusters.csv results/plot.png
+	python -c "import os, glob; [os.remove(f) for f in glob.glob('results/*.csv') + glob.glob('results/*.png') + ['kmeans.exe'] if os.path.exists(f)]"
 	@echo "✓ Cleaned build artifacts"
 
 # ── Python Interfaces ────────────────────────────────────────────
@@ -57,6 +56,19 @@ gui: build
 plot:
 	python src/visualization/plot.py
 
+# ── Preprocessing ────────────────────────────────────────────────
+
+preprocess:
+	python scripts/preprocess.py --impute --stats
+
+preprocess-pima:
+	python scripts/preprocess.py --input data/pima-Indians-diabetes-dataset.csv \
+	    --output data/pima_preprocessed.csv --impute --stats
+
+preprocess-diabetes:
+	python scripts/preprocess.py --input data/diabetes.csv \
+	    --output data/diabetes_preprocessed.csv --impute --stats
+
 # ── Phony ────────────────────────────────────────────────────────
 
-.PHONY: build run clean tui gui plot
+.PHONY: build run clean tui gui plot preprocess preprocess-pima preprocess-diabetes
